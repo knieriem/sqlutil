@@ -10,6 +10,7 @@ import (
 
 type SourceConf struct {
 	Driver   string
+	File     string
 	Host     string
 	User     string
 	Password string
@@ -23,6 +24,7 @@ type DataSource struct {
 	DisplayName     string
 	Meddler         *meddler.Database
 	QuoteNames      bool
+	CastPlaceholder bool
 }
 
 func NewDataSource(c *SourceConf) (*DataSource, error) {
@@ -105,5 +107,19 @@ func newSQLDataSource(c *SourceConf, serverType, dbQueryParam string) (*DataSour
 	ds.DisplayName = usafe.String()
 
 	ds.DriverName = c.Driver
+	return ds, nil
+}
+
+func newDataSourceQL(c *SourceConf) (*DataSource, error) {
+	ds := new(DataSource)
+	file := c.File
+	if file != "" {
+		file = "file://" + file
+	}
+	ds.Name = file
+	ds.DisplayName = file
+	ds.DriverName = c.Driver
+	ds.Meddler = meddler.PostgreSQL
+	ds.CastPlaceholder = true
 	return ds, nil
 }
