@@ -18,16 +18,21 @@ type SourceConf struct {
 }
 
 type DataSource struct {
-	DriverName  string
-	Name        string
-	DisplayName string
-	Meddler     *meddler.Database
+	DriverName      string
+	Name            string
+	DisplayName     string
+	Meddler         *meddler.Database
+	QuoteNames      bool
 }
 
 func NewDataSource(c *SourceConf) (*DataSource, error) {
 	switch c.Driver {
 	case "mssql":
 		return newDataSourceMSSQL(c)
+	case "postgres":
+		return newDataSourcePostgres(c)
+	case "ql":
+		return newDataSourceQL(c)
 	case "":
 		return nil, errors.New("data source configuration: empty driver name")
 	}
@@ -35,6 +40,25 @@ func NewDataSource(c *SourceConf) (*DataSource, error) {
 }
 
 func newDataSourceMSSQL(c *SourceConf) (*DataSource, error) {
+	ds, err := newSQLDataSource(c, "sqlserver", "database")
+	if err != nil {
+		return nil, err
+	}
+	ds.Meddler = meddler.PostgreSQL
+	return ds, nil
+}
+
+func newDataSourcePostgres(c *SourceConf) (*DataSource, error) {
+	ds, err := newSQLDataSource(c, "postgres", "")
+	if err != nil {
+		return nil, err
+	}
+	ds.Meddler = meddler.PostgreSQL
+	ds.QuoteNames = true
+	return ds, nil
+}
+
+func newSQLDataSource(c *SourceConf, serverType, dbQueryParam string) (*DataSource, error) {
 	host := c.Host
 	if host == "" {
 		host = "localhost"
@@ -51,7 +75,12 @@ func newDataSourceMSSQL(c *SourceConf) (*DataSource, error) {
 	}
 
 	query := url.Values{}
-	query.Add("database", c.Database)
+	path := ""
+	if qp := dbQueryParam; qp != "" {
+		query.Add(qp, c.Database)
+	} else {
+		path = c.Database
+	}
 	for _, s := range c.Append {
 		f := strings.SplitN(s, ":", 2)
 		if len(f) != 2 {
@@ -61,10 +90,10 @@ func newDataSourceMSSQL(c *SourceConf) (*DataSource, error) {
 	}
 
 	u := &url.URL{
-		Scheme: "sqlserver",
-		User:   url.UserPassword(user, c.Password),
-		Host:   host,
-		// Path:  instance, // if connecting to an instance instead of a port
+		Scheme:   serverType,
+		User:     url.UserPassword(user, c.Password),
+		Host:     host,
+		Path:     path,
 		RawQuery: query.Encode(),
 	}
 
@@ -76,6 +105,5 @@ func newDataSourceMSSQL(c *SourceConf) (*DataSource, error) {
 	ds.DisplayName = usafe.String()
 
 	ds.DriverName = c.Driver
-	ds.Meddler = meddler.PostgreSQL
 	return ds, nil
 }
