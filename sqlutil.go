@@ -23,7 +23,6 @@ type DataSource struct {
 	Name            string
 	DisplayName     string
 	Meddler         *meddler.Database
-	QuoteNames      bool
 	CastPlaceholder bool
 }
 
@@ -41,6 +40,14 @@ func NewDataSource(c *SourceConf) (*DataSource, error) {
 	return nil, errors.New("unknown database driver: " + c.Driver)
 }
 
+func (ds *DataSource) QuoteName(name string) string {
+	m := ds.Meddler
+	if m.Quote == "" {
+		return name
+	}
+	return m.Quote + name + m.Quote
+}
+
 func newDataSourceMSSQL(c *SourceConf) (*DataSource, error) {
 	ds, err := newSQLDataSource(c, "sqlserver", "database")
 	if err != nil {
@@ -56,7 +63,6 @@ func newDataSourcePostgres(c *SourceConf) (*DataSource, error) {
 		return nil, err
 	}
 	ds.Meddler = meddler.PostgreSQL
-	ds.QuoteNames = true
 	return ds, nil
 }
 
