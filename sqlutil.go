@@ -9,19 +9,21 @@ import (
 )
 
 type SourceConf struct {
-	Driver   string
-	File     string
-	Host     string
-	User     string
-	Password string
-	Database string
-	Append   []string
+	Driver      string
+	File        string
+	Host        string
+	User        string
+	Password    string
+	Database    string
+	TablePrefix string
+	Append      []string
 }
 
 type DataSource struct {
 	DriverName      string
 	Name            string
 	DisplayName     string
+	TablePrefix     string
 	Meddler         *meddler.Database
 	CastPlaceholder bool
 }
@@ -40,7 +42,11 @@ func NewDataSource(c *SourceConf) (*DataSource, error) {
 	return nil, errors.New("unknown database driver: " + c.Driver)
 }
 
-func (ds *DataSource) QuoteName(name string) string {
+func (ds *DataSource) QuoteTable(name string) string {
+	return ds.Quote(ds.TablePrefix + name)
+}
+
+func (ds *DataSource) Quote(name string) string {
 	m := ds.Meddler
 	if m.Quote == "" {
 		return name
@@ -113,6 +119,7 @@ func newSQLDataSource(c *SourceConf, serverType, dbQueryParam string) (*DataSour
 	ds.DisplayName = usafe.String()
 
 	ds.DriverName = c.Driver
+	ds.TablePrefix = c.TablePrefix
 	return ds, nil
 }
 
@@ -125,6 +132,7 @@ func newDataSourceQL(c *SourceConf) (*DataSource, error) {
 	ds.Name = file
 	ds.DisplayName = file
 	ds.DriverName = c.Driver
+	ds.TablePrefix = c.TablePrefix
 	ds.Meddler = meddler.QL
 	ds.CastPlaceholder = true
 	return ds, nil
