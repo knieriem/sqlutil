@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/russross/meddler"
+	"github.com/knieriem/meddler"
 )
 
 type SourceConf struct {
@@ -46,7 +46,7 @@ func newDataSourceMSSQL(c *SourceConf) (*DataSource, error) {
 	if err != nil {
 		return nil, err
 	}
-	ds.Meddler = meddler.PostgreSQL
+	ds.Meddler = meddler.MSSQL
 	return ds, nil
 }
 
@@ -119,7 +119,7 @@ func newDataSourceQL(c *SourceConf) (*DataSource, error) {
 	ds.Name = file
 	ds.DisplayName = file
 	ds.DriverName = c.Driver
-	ds.Meddler = meddler.PostgreSQL
+	ds.Meddler = meddler.QL
 	ds.CastPlaceholder = true
 	return ds, nil
 }
